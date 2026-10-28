@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: cms_db
+    environment:
+      POSTGRES_DB: medicina
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: cms_local_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - cms_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d medicina"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cms_app
+    ports:
+      - "8095:80"
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: medicina
+      DB_USERNAME: postgres
+      DB_PASSWORD: cms_local_password
+
+volumes:
+  cms_db_data:
